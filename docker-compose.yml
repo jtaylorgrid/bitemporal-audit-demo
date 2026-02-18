@@ -1,0 +1,5 @@
+services:
+  xtdb:
+    image: ghcr.io/xtdb/xtdb
+    ports:
+      - "5432:5432"

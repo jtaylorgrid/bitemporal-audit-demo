@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exported — Bitemporal Audit Demo — XTDB</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #f8f7f5;
+    --card-bg: #ffffff;
+    --border: #e5e5e5;
+    --text: #1a1a1a;
+    --text-muted: #4a4a4a;
+    --accent: #ffb800;
+    --accent-hover: #f7931d;
+    --success: #28a745;
+    --warning: #f7931d;
+    --danger: #dc3545;
+    --dark: #2c2f32;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 20px;
+}
+
+/* --- Header --- */
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+
+.header-text {
+    text-align: left;
+}
+
+.header h1 {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.header .subtitle {
+    color: var(--text-muted);
+    font-size: 1.05em;
+}
+
+.header-logo img {
+    height: 36px;
+    opacity: 0.85;
+}
+
+/* --- Tabs --- */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.tab {
+    padding: 10px 20px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    background: var(--card-bg);
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.tab:hover {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+}
+
+.tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--dark);
+    box-shadow: 0 2px 8px rgba(255, 184, 0, 0.3);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* --- Cards --- */
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.card h2 { font-size: 1.2em; margin-bottom: 16px; }
+.card h3 { font-size: 1.05em; margin-bottom: 12px; }
+
+/* --- Tables --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+}
+
+th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+
+td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+}
+
+tr:hover td { background: rgba(255, 184, 0, 0.08); }
+
+.table-wrap { overflow-x: auto; }
+
+/* --- Query boxes --- */
+.query-box {
+    background: #1e2127;
+    color: #abb2bf;
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'Fira Mono', 'Consolas', monospace;
+    font-size: 0.82em;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 16px 0;
+    white-space: pre;
+}
+
+.query-box .kw { color: var(--accent); font-weight: 500; }
+.query-box .str { color: #98c379; }
+.query-box .cmt { color: #5c6370; font-style: italic; }
+
+/* --- Badges --- */
+.badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-approved  { background: #e8f5e9; color: #2e7d32; }
+.badge-queued    { background: #fff3e0; color: #e65100; }
+.badge-closed    { background: #e3f2fd; color: #1565c0; }
+.badge-submitted { background: #e8f5e9; color: #2e7d32; }
+.badge-composite { background: #f3e5f5; color: #7b1fa2; }
+.badge-tolerance { background: #fff8e1; color: #f57f17; }
+
+/* --- Callouts --- */
+.callout {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 16px 0;
+    border-left: 4px solid;
+    font-size: 0.92em;
+}
+
+.callout-insight {
+    background: rgba(255, 184, 0, 0.08);
+    border-color: var(--accent);
+}
+
+.callout-key {
+    background: rgba(40, 167, 69, 0.08);
+    border-color: var(--success);
+}
+
+.callout-gap {
+    background: rgba(220, 53, 69, 0.08);
+    border-color: var(--danger);
+}
+
+.callout strong { display: block; margin-bottom: 4px; }
+
+/* --- Info grid --- */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.info-card {
+    padding: 16px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+}
+
+.info-card.green { border-left-color: var(--success); }
+.info-card.red   { border-left-color: var(--danger); }
+
+.info-card h4 {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.info-card p { font-size: 0.95em; }
+
+/* --- Architecture diagram --- */
+.arch-diagram {
+    max-width: 680px;
+    width: 100%;
+    height: auto;
+}
+
+/* --- Inline code --- */
+code {
+    font-family: 'Fira Mono', 'Consolas', monospace;
+    font-size: 0.88em;
+    color: var(--accent-hover);
+    background: rgba(255, 184, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* --- Loading / empty --- */
+.loading {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-muted);
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* --- Comparison layout --- */
+.comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.comparison > div { min-width: 0; }
+
+/* --- Query section --- */
+.query-section { margin-bottom: 32px; }
+
+.query-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.query-label {
+    background: var(--dark);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+    font-family: 'Fira Mono', monospace;
+}
+
+.result-count {
+    font-size: 0.82em;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+/* --- Demo script overlay --- */
+.script-toggle {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 1000;
+    background: var(--dark);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.85em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    transition: background 0.2s;
+}
+
+.script-toggle:hover { background: #3d4148; }
+
+.script-overlay {
+    position: fixed;
+    top: 0; right: -440px;
+    width: 420px;
+    height: 100vh;
+    background: var(--card-bg);
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+    z-index: 999;
+    overflow-y: auto;
+    transition: right 0.3s ease;
+}
+
+.script-overlay.open { right: 0; }
+
+.script-header {
+    position: sticky;
+    top: 0;
+    background: var(--dark);
+    color: white;
+    padding: 16px 20px;
+    font-weight: 600;
+    font-size: 1.05em;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.script-header .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.script-body { padding: 20px; }
+
+.script-step {
+    margin-bottom: 24px;
+    padding-left: 36px;
+    position: relative;
+}
+
+.script-step::before {
+    content: attr(data-step);
+    position: absolute;
+    left: 0; top: 0;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: var(--dark);
+    border-radius: 50%;
+    font-size: 0.75em;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.script-step h4 {
+    font-size: 0.95em;
+    margin-bottom: 6px;
+}
+
+.script-step p {
+    font-size: 0.88em;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.script-action {
+    background: rgba(255, 184, 0, 0.08);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 0.85em;
+    border-radius: 0 4px 4px 0;
+}
+
+.script-quote {
+    background: rgba(247, 147, 29, 0.08);
+    border-left: 3px solid var(--warning);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 0.85em;
+    font-style: italic;
+    border-radius: 0 4px 4px 0;
+}
+
+.script-punchline {
+    background: rgba(40, 167, 69, 0.08);
+    border-left: 3px solid var(--success);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 0.85em;
+    border-radius: 0 4px 4px 0;
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+    .comparison { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr; }
+    .script-overlay { width: 100vw; right: -100vw; }
+}
+</style>
+<script>const PRELOADED_DATA = {"1a":{"columns":["invoice_id","status","amount","decision_id","outcome","actor_role","reason_summary","proposal_type","confidence","model_version"],"rows":[["I-7001","CLOSED","5000","D-5001","APPROVED","AR_ANALYST","Composite match: I-7001 + I-7002 + I-7003 sums to $10,000. Approved per model recommendation.","COMPOSITE","0.874","v1.2"],["I-7002","CLOSED","3200","D-5001","APPROVED","AR_ANALYST","Composite match: I-7001 + I-7002 + I-7003 sums to $10,000. Approved per model recommendation.","COMPOSITE","0.874","v1.2"],["I-7003","CLOSED","1800","D-5001","APPROVED","AR_ANALYST","Composite match: I-7001 + I-7002 + I-7003 sums to $10,000. Approved per model recommendation.","COMPOSITE","0.874","v1.2"]]},"1b":{"columns":["invoice_id","status","amount","payer_name","raw_ref_text","channel","decision_id","outcome","actor_role","proposal_type","confidence","model_version"],"rows":[["I-7001","CLOSED","5000","Acme Corp","PAYMENT REF ACME FEB INVOICES CONSOLIDATED PMT","ACH","D-5001","APPROVED","AR_ANALYST","COMPOSITE","0.874","v1.2"],["I-7002","CLOSED","3200","Acme Corp","PAYMENT REF ACME FEB INVOICES CONSOLIDATED PMT","ACH","D-5001","APPROVED","AR_ANALYST","COMPOSITE","0.874","v1.2"],["I-7003","CLOSED","1800","Acme Corp","PAYMENT REF ACME FEB INVOICES CONSOLIDATED PMT","ACH","D-5001","APPROVED","AR_ANALYST","COMPOSITE","0.874","v1.2"]]},"1c":{"columns":["decision_id","outcome","actor_role","batch_id","erp","batch_type","submitted_by","status"],"rows":[["D-5001","APPROVED","AR_ANALYST","B-20260213-01","NetSuite","manager_entry_upload","U-211","SUBMITTED"]]},"2":{"columns":["model_version","confidence","proposal_type","outcome","reason_summary"],"rows":[["v1.2","0.874","COMPOSITE","APPROVED","Composite match: I-7001 + I-7002 + I-7003 sums to $10,000. Approved per model recommendation."],["v1.4","0.512","TOLERANCE","QUEUED","v1.4: Confidence below 0.75 threshold. Dirty remittance, no invoice refs. Escalated to Controller."]]},"3a":{"columns":["cm_id","invoice_id","amount","reason","issued_date"],"rows":[]},"3b":{"columns":["cm_id","invoice_id","amount","reason","issued_date"],"rows":[["CM-501","I-7003","200","Pricing adjustment — approved by sales Feb 24","2026-02-24"]]}};</script>
+</head>
+<body>
+
+<!-- Demo script toggle -->
+<button class="script-toggle" onclick="toggleScript()">Script [S]</button>
+
+<!-- Demo script overlay -->
+<div class="script-overlay" id="script-overlay">
+    <div class="script-header">
+        <span>Demo Script</span>
+        <button class="close-btn" onclick="toggleScript()">&times;</button>
+    </div>
+    <div class="script-body">
+        <div class="script-step" data-step="1">
+            <h4>The Opening Question</h4>
+            <p>This demo is the answer to one question:</p>
+            <div class="script-quote">"How do you reconstruct decision state historically when models evolve?"</div>
+            <p>Every AI-driven cash application decision directly affects invoice status, revenue recognition, and period close. An auditor needs to know: what did the system know, what did it decide, and why?</p>
+        </div>
+
+        <div class="script-step" data-step="2">
+            <h4>Scenario 1: The Decision</h4>
+            <div class="script-action">Navigate to the <strong>Decision State</strong> tab</div>
+            <p>$10,000 payment from Acme Corp. Dirty remittance — no invoice numbers. The AI matching engine proposes a composite match across three invoices. AR Analyst approves. Batch goes to NetSuite.</p>
+            <p>Query 1A reconstructs the <em>complete</em> decision state — invoices, proposal, model version, actor, outcome — from a single temporal snapshot.</p>
+        </div>
+
+        <div class="script-step" data-step="3">
+            <h4>Model Evolution</h4>
+            <div class="script-action">Navigate to the <strong>Model Evolution</strong> tab</div>
+            <p>Same payment. Model v1.2 approved it at 87.4% confidence. Model v1.4, with stricter thresholds, would have queued it at 51.2% for Controller review.</p>
+            <div class="script-punchline">Both records exist in the decision journal. The Feb 13 decision was compliant under the model and policy in effect at that time. That's the point.</div>
+        </div>
+
+        <div class="script-step" data-step="4">
+            <h4>Scenario 2: The Credit Memo</h4>
+            <div class="script-action">Navigate to the <strong>Credit Memo</strong> tab</div>
+            <p>A $200 credit memo: business effective date Feb 24, entered into the system on March 3. The decision was made Feb 25.</p>
+            <p><strong>Transaction time</strong> (Query 3A): zero rows. The system didn't know.<br>
+            <strong>Valid time</strong> (Query 3B): one row. The business fact existed.</p>
+            <div class="script-punchline">This gap happens at every enterprise AR shop at month-end. It is completely unsolvable without bitemporal data modeling. XTDB handles both dimensions natively.</div>
+        </div>
+
+        <div class="script-step" data-step="5">
+            <h4>Key Takeaway</h4>
+            <p>The decision journal and audit layer should be built on XTDB. Not because XTDB is the product — but because a bitemporal data layer solves a structural problem that conventional approaches handle poorly.</p>
+            <p>No custom event sourcing. No log reconstruction. No asking a DBA to write a special report. One query interface, two temporal dimensions, complete audit narrative.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<div class="container">
+    <div class="header">
+        <div class="header-text">
+            <h1>Bitemporal Audit Integrity</h1>
+            <p class="subtitle">XTDB Decision Journal Demo for Cash Application</p>
+        </div>
+        <div class="header-logo">
+            <img src="https://cdn.brandfetch.io/idyloU541m/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1729658573277" alt="Grid Dynamics">
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="decision">Decision State</button>
+        <button class="tab" data-tab="model">Model Evolution</button>
+        <button class="tab" data-tab="creditmemo">Credit Memo</button>
+        <button class="tab export-hide" data-tab="export">Export</button>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- OVERVIEW TAB                                                        -->
+    <!-- ================================================================== -->
+    <div id="tab-overview" class="tab-content active">
+        <div class="card">
+            <h2>What This Demo Shows</h2>
+            <p>This demo answers a single question: <strong>How do you reconstruct decision state historically when models evolve?</strong></p>
+            <p style="margin-top:8px">Every AI-driven cash application decision — matching payments to invoices, approving tolerance matches, applying credit memos — directly affects revenue recognition and is subject to SOX audit. When an auditor or Controller needs to understand why a period closed the way it did, they need two distinct answers:</p>
+
+            <div class="info-grid" style="margin-top:16px">
+                <div class="info-card">
+                    <h4>System Time (Transaction Time)</h4>
+                    <p>What did the system know at the moment it made the decision? Reconstructs the exact database state — invoices, proposals, model versions, actors — as it existed at a specific past timestamp.</p>
+                </div>
+                <div class="info-card green">
+                    <h4>Valid Time (Business Time)</h4>
+                    <p>What was true in the business world at that time, even if the system didn't know it yet? Credit memos, remittance corrections, and pricing adjustments often arrive late.</p>
+                </div>
+            </div>
+
+            <div class="callout callout-insight" style="margin-top:16px">
+                <strong>Why XTDB?</strong>
+                No conventional database handles both of these as first-class queryable capabilities. XTDB handles both natively — no custom event sourcing, no log reconstruction, no application-level temporal modeling.
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Demo Scenarios</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>Scenario 1: Decision State</h4>
+                    <p>$10,000 composite payment with dirty remittance. AI proposes a match, AR Analyst approves. An auditor asks: <em>what did you know, what did you decide, and why?</em></p>
+                </div>
+                <div class="info-card">
+                    <h4>Scenario 1+: Model Evolution</h4>
+                    <p>Same payment evaluated by model v1.2 (approved) and v1.4 (queued). The decision was compliant under the model in effect at that time.</p>
+                </div>
+                <div class="info-card red">
+                    <h4>Scenario 2: Backdated Credit Memo</h4>
+                    <p>$200 credit memo effective Feb 24, entered into the system Mar 3. The system made a defensible decision based on what it knew — but the business reality was different.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Architecture</h2>
+            <p>The platform produces <strong>manager entry uploads</strong> — structured batches that NetSuite ingests through its own approval and posting workflows. The control point stays inside NetSuite. XTDB serves as the <strong>decision journal</strong>: the bitemporal audit layer underneath the matching engine.</p>
+            <div style="margin-top:16px;text-align:center">
+                <?xml version="1.0" encoding="utf-8"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 909 901"><svg class="d2-2120174445 d2-svg" width="909" height="901" viewBox="-11 -21 909 901"><rect x="-11.000000" y="-21.000000" width="909.000000" height="901.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-2120174445 .text {
+	font-family: "d2-2120174445-font-regular";
+}
+@font-face {
+	font-family: d2-2120174445-font-regular;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-2120174445 .text-bold {
+	font-family: "d2-2120174445-font-bold";
+}
+@font-face {
+	font-family: d2-2120174445-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-2120174445 .text-italic {
+	font-family: "d2-2120174445-font-italic";
+}
+@font-face {
+	font-family: d2-2120174445-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-2120174445 .fill-N1{fill:#0A0F25;}
+		.d2-2120174445 .fill-N2{fill:#676C7E;}
+		.d2-2120174445 .fill-N3{fill:#9499AB;}
+		.d2-2120174445 .fill-N4{fill:#CFD2DD;}
+		.d2-2120174445 .fill-N5{fill:#DEE1EB;}
+		.d2-2120174445 .fill-N6{fill:#EEF1F8;}
+		.d2-2120174445 .fill-N7{fill:#FFFFFF;}
+		.d2-2120174445 .fill-B1{fill:#0D32B2;}
+		.d2-2120174445 .fill-B2{fill:#0D32B2;}
+		.d2-2120174445 .fill-B3{fill:#E3E9FD;}
+		.d2-2120174445 .fill-B4{fill:#E3E9FD;}
+		.d2-2120174445 .fill-B5{fill:#EDF0FD;}
+		.d2-2120174445 .fill-B6{fill:#F7F8FE;}
+		.d2-2120174445 .fill-AA2{fill:#4A6FF3;}
+		.d2-2120174445 .fill-AA4{fill:#EDF0FD;}
+		.d2-2120174445 .fill-AA5{fill:#F7F8FE;}
+		.d2-2120174445 .fill-AB4{fill:#EDF0FD;}
+		.d2-2120174445 .fill-AB5{fill:#F7F8FE;}
+		.d2-2120174445 .stroke-N1{stroke:#0A0F25;}
+		.d2-2120174445 .stroke-N2{stroke:#676C7E;}
+		.d2-2120174445 .stroke-N3{stroke:#9499AB;}
+		.d2-2120174445 .stroke-N4{stroke:#CFD2DD;}
+		.d2-2120174445 .stroke-N5{stroke:#DEE1EB;}
+		.d2-2120174445 .stroke-N6{stroke:#EEF1F8;}
+		.d2-2120174445 .stroke-N7{stroke:#FFFFFF;}
+		.d2-2120174445 .stroke-B1{stroke:#0D32B2;}
+		.d2-2120174445 .stroke-B2{stroke:#0D32B2;}
+		.d2-2120174445 .stroke-B3{stroke:#E3E9FD;}
+		.d2-2120174445 .stroke-B4{stroke:#E3E9FD;}
+		.d2-2120174445 .stroke-B5{stroke:#EDF0FD;}
+		.d2-2120174445 .stroke-B6{stroke:#F7F8FE;}
+		.d2-2120174445 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-2120174445 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-2120174445 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-2120174445 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-2120174445 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-2120174445 .background-color-N1{background-color:#0A0F25;}
+		.d2-2120174445 .background-color-N2{background-color:#676C7E;}
+		.d2-2120174445 .background-color-N3{background-color:#9499AB;}
+		.d2-2120174445 .background-color-N4{background-color:#CFD2DD;}
+		.d2-2120174445 .background-color-N5{background-color:#DEE1EB;}
+		.d2-2120174445 .background-color-N6{background-color:#EEF1F8;}
+		.d2-2120174445 .background-color-N7{background-color:#FFFFFF;}
+		.d2-2120174445 .background-color-B1{background-color:#0D32B2;}
+		.d2-2120174445 .background-color-B2{background-color:#0D32B2;}
+		.d2-2120174445 .background-color-B3{background-color:#E3E9FD;}
+		.d2-2120174445 .background-color-B4{background-color:#E3E9FD;}
+		.d2-2120174445 .background-color-B5{background-color:#EDF0FD;}
+		.d2-2120174445 .background-color-B6{background-color:#F7F8FE;}
+		.d2-2120174445 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-2120174445 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-2120174445 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-2120174445 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-2120174445 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-2120174445 .color-N1{color:#0A0F25;}
+		.d2-2120174445 .color-N2{color:#676C7E;}
+		.d2-2120174445 .color-N3{color:#9499AB;}
+		.d2-2120174445 .color-N4{color:#CFD2DD;}
+		.d2-2120174445 .color-N5{color:#DEE1EB;}
+		.d2-2120174445 .color-N6{color:#EEF1F8;}
+		.d2-2120174445 .color-N7{color:#FFFFFF;}
+		.d2-2120174445 .color-B1{color:#0D32B2;}
+		.d2-2120174445 .color-B2{color:#0D32B2;}
+		.d2-2120174445 .color-B3{color:#E3E9FD;}
+		.d2-2120174445 .color-B4{color:#E3E9FD;}
+		.d2-2120174445 .color-B5{color:#EDF0FD;}
+		.d2-2120174445 .color-B6{color:#F7F8FE;}
+		.d2-2120174445 .color-AA2{color:#4A6FF3;}
+		.d2-2120174445 .color-AA4{color:#EDF0FD;}
+		.d2-2120174445 .color-AA5{color:#F7F8FE;}
+		.d2-2120174445 .color-AB4{color:#EDF0FD;}
+		.d2-2120174445 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.sketch-overlay-B1{fill:url(#streaks-darker-d2-2120174445);mix-blend-mode:lighten}.sketch-overlay-B2{fill:url(#streaks-darker-d2-2120174445);mix-blend-mode:lighten}.sketch-overlay-B3{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-B4{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-B5{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-B6{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-AA2{fill:url(#streaks-dark-d2-2120174445);mix-blend-mode:overlay}.sketch-overlay-AA4{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-AA5{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-AB4{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-AB5{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-N1{fill:url(#streaks-darker-d2-2120174445);mix-blend-mode:lighten}.sketch-overlay-N2{fill:url(#streaks-dark-d2-2120174445);mix-blend-mode:overlay}.sketch-overlay-N3{fill:url(#streaks-normal-d2-2120174445);mix-blend-mode:color-burn}.sketch-overlay-N4{fill:url(#streaks-normal-d2-2120174445);mix-blend-mode:color-burn}.sketch-overlay-N5{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-N6{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.sketch-overlay-N7{fill:url(#streaks-bright-d2-2120174445);mix-blend-mode:darken}.light-code{display: block}.dark-code{display: none}]]></style><g class="cGF5bWVudA=="><g class="shape" ><path d="M 78 0 H 253 C 277 0 277 37 277 41 C 277 45 277 82 253 82 H 78 C 54 82 54 45 54 41 C 54 37 54 0 78 0 Z" stroke="#f7931d" fill="#fff3e0" style="stroke-width:2;" /><path d="M 253 0 C 229 0 229 37 229 41 C 229 45 229 82 253 82" stroke="#f7931d" fill="#fff3e0" style="stroke-width:2;" /></g><text x="153.500000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="153.500000" dy="0.000000">Payment Arrives</tspan><tspan x="153.500000" dy="18.500000">(dirty remittance)</tspan></text></g><g class="d29ya2JlbmNo"><g class="shape" ><rect x="10.000000" y="202.000000" width="310.000000" height="348.000000" stroke="#2c2f32" fill="#f9f9f9" style="stroke-width:2;" /></g><text x="165.000000" y="189.000000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:28px">Cash App Workbench</text></g><g class="eHRkYg=="><g class="shape" ><path d="M 434 749 C 434 725 508 725 516 725 C 524 725 598 725 598 749 V 835 C 598 859 524 859 516 859 C 508 859 434 859 434 835 V 749 Z" stroke="#ffb800" fill="#fffde7" style="stroke-width:2;" /><path d="M 434 749 C 434 773 508 773 516 773 C 524 773 598 773 598 749" stroke="#ffb800" fill="#fffde7" style="stroke-width:2;" /></g><text x="516.000000" y="801.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="516.000000" dy="0.000000">XTDB</tspan><tspan x="516.000000" dy="18.500000">Decision Journal</tspan></text></g><g class="bmV0c3VpdGU="><g class="shape" ><rect x="13.000000" y="751.000000" width="180.000000" height="82.000000" stroke="#28a745" fill="#e8f5e9" style="stroke-width:2;" /></g><text x="103.000000" y="789.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="103.000000" dy="0.000000">NetSuite (ERP)</tspan><tspan x="103.000000" dy="18.500000">Approval + Posting</tspan></text></g><g class="bGF0ZV9mYWN0cw=="><g class="shape" ><path d="M 394 446 H 638 C 662 446 662 483 662 487 C 662 491 662 528 638 528 H 394 C 370 528 370 491 370 487 C 370 483 370 446 394 446 Z" stroke="#dc3545" fill="#ffebee" style="stroke-width:2;" /><path d="M 638 446 C 614 446 614 483 614 487 C 614 491 614 528 638 528" stroke="#dc3545" fill="#ffebee" style="stroke-width:2;" /></g><text x="504.000000" y="484.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="504.000000" dy="0.000000">Late-Arriving Facts</tspan><tspan x="504.000000" dy="18.500000">(credit memos, corrections)</tspan></text></g><g class="YXVkaXRvcg=="><g class="shape" ><path d="M 877 538 H 722 V 537 C 722 519 739 504 766 496 C 751 489 742 479 742 469 C 742 450 768 435 799 435 C 831 435 856 450 856 469 C 856 480 847 490 832 496 C 859 504 876 519 876 537 V 538 H 877 Z" stroke="#1565c0" fill="#e3f2fd" style="stroke-width:2;" /></g><text x="799.500000" y="559.000000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">Auditor / Controller</text></g><g class="d29ya2JlbmNoLmFp"><g class="shape" ><rect x="40.000000" y="232.000000" width="250.000000" height="82.000000" stroke="#7b1fa2" fill="#f3e5f5" style="stroke-width:2;" /></g><text x="165.000000" y="270.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="165.000000" dy="0.000000">AI Matching Engine</tspan><tspan x="165.000000" dy="18.500000">(model version + confidence)</tspan></text></g><g class="d29ya2JlbmNoLmFuYWx5c3Q="><g class="shape" ><rect x="77.000000" y="454.000000" width="177.000000" height="66.000000" stroke="#1565c0" fill="#e3f2fd" style="stroke-width:2;" /></g><text x="165.500000" y="492.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">AR Analyst Review</text></g><g class="d29ya2JlbmNoLihhaSAtJmd0OyBhbmFseXN0KVswXQ=="><marker id="mk-d2-2120174445-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 165.000000 315.500000 C 165.000000 362.299988 165.000000 390.299988 165.000000 449.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2120174445-3488378134)" mask="url(#d2-2120174445)" /><text x="165.000000" y="389.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">proposal</text></g><g class="KHBheW1lbnQgLSZndDsgd29ya2JlbmNoLmFpKVswXQ=="><path d="M 165.000000 84.000000 C 165.000000 122.000000 165.000000 192.000000 165.000000 228.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2120174445-3488378134)" mask="url(#d2-2120174445)" /></g><g class="KHdvcmtiZW5jaC5hbmFseXN0IC0mZ3Q7IHh0ZGIpWzBd"><marker id="mk-d2-2120174445-1740756526" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#ffb800" class="connection" stroke-width="2" /> </marker><path d="M 189.744797 522.119321 C 227.714005 574.500000 276.799988 675.599976 430.402379 750.251537" stroke="#ffb800" fill="none" class="connection" style="stroke-width:2;" marker-end="url(#mk-d2-2120174445-1740756526)" mask="url(#d2-2120174445)" /><text x="276.000000" y="671.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px"><tspan x="276.000000" dy="0.000000">decision + batch</tspan><tspan x="276.000000" dy="18.500000">recorded</tspan></text></g><g class="KHdvcmtiZW5jaC5hbmFseXN0IC0mZ3Q7IG5ldHN1aXRlKVswXQ=="><marker id="mk-d2-2120174445-1441993715" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#28a745" class="connection" stroke-width="2" /> </marker><path d="M 143.619138 522.196081 C 110.934998 574.500000 102.500000 675.500000 102.500000 747.500000" stroke="#28a745" fill="none" class="connection" style="stroke-width:2;" marker-end="url(#mk-d2-2120174445-1441993715)" mask="url(#d2-2120174445)" /><text x="106.500000" y="629.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px"><tspan x="106.500000" dy="0.000000">manager entry</tspan><tspan x="106.500000" dy="18.500000">upload</tspan></text></g><g class="KGxhdGVfZmFjdHMgLSZndDsgeHRkYilbMF0="><marker id="mk-d2-2120174445-2423503570" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#dc3545" class="connection" stroke-width="2" /> </marker><path d="M 516.000000 530.000000 C 516.000000 576.000000 516.000000 670.200012 516.000000 721.000000" stroke="#dc3545" fill="none" class="connection" style="stroke-width:2;stroke-dasharray:6.000000,5.919384;" marker-end="url(#mk-d2-2120174445-2423503570)" mask="url(#d2-2120174445)" /><text x="516.500000" y="632.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">backdated valid time</text></g><g class="KGF1ZGl0b3IgLSZndDsgeHRkYilbMF0="><path d="M 799.500000 566.000000 C 799.500000 583.200012 759.200012 675.599976 601.614586 750.286883" stroke="#ffb800" fill="none" class="connection" style="stroke-width:2;stroke-dasharray:6.000000,5.919384;" marker-end="url(#mk-d2-2120174445-1740756526)" mask="url(#d2-2120174445)" /><text x="733.000000" y="686.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px"><tspan x="733.000000" dy="0.000000">temporal queries</tspan><tspan x="733.000000" dy="18.500000">(system time + valid time)</tspan></text></g><mask id="d2-2120174445" maskUnits="userSpaceOnUse" x="-11" y="-21" width="909" height="901">
+<rect x="-11" y="-21" width="909" height="901" fill="white"></rect>
+<rect x="133.000000" y="373.000000" width="64" height="21" fill="black"></rect>
+<rect x="221.000000" y="655.000000" width="110" height="37" fill="black"></rect>
+<rect x="55.000000" y="613.000000" width="103" height="37" fill="black"></rect>
+<rect x="445.000000" y="616.000000" width="143" height="21" fill="black"></rect>
+<rect x="648.000000" y="670.000000" width="170" height="37" fill="black"></rect>
+</mask></svg></svg>
+
+            </div>
+            <div class="info-grid" style="margin-top:16px">
+                <div class="info-card">
+                    <h4>Cash App Workbench</h4>
+                    <p>Matching engine proposes: exact, tolerance, composite, and multi-entity matches with confidence scores.</p>
+                </div>
+                <div class="info-card green">
+                    <h4>Decision Journal (XTDB)</h4>
+                    <p>Every proposal, approval, modification, rejection, and escalation — with full bitemporal history. ERP batch status also recorded.</p>
+                </div>
+                <div class="info-card">
+                    <h4>NetSuite (ERP)</h4>
+                    <p>Receives manager entry uploads. Applies its own approval workflows. Remains the posting and approval system of record.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- DECISION STATE TAB (Scenario 1: Queries 1A, 1B, 1C)                -->
+    <!-- ================================================================== -->
+    <div id="tab-decision" class="tab-content">
+        <div class="card">
+            <h2>Scenario 1 &mdash; Reconstruct Decision State</h2>
+            <p>On <strong>February 13 at 4:30 PM EST</strong>, a $10,000 payment arrives from Acme Corp with a dirty remittance: <code>PAYMENT REF ACME FEB INVOICES CONSOLIDATED PMT</code>. No invoice numbers. The AI matching engine (model v1.2) proposes a composite match across three open invoices summing to $10,000. An AR Analyst approves. The batch goes to NetSuite.</p>
+            <p style="margin-top:8px">In April, an auditor asks: <em>What did you know on February 13? What did you decide? Why? What changed afterward?</em></p>
+            <div class="callout callout-key">
+                <strong>Key Point</strong>
+                Every query below uses <code>FOR SYSTEM_TIME AS OF</code> anchored to the same timestamp. The result is a complete reconstruction of the decision state as the system understood it at that exact moment.
+            </div>
+        </div>
+
+        <!-- Query 1A -->
+        <div class="card query-section">
+            <h3><span class="query-label">1A</span> Decision state at Feb 13 4:30 PM</h3>
+            <p>Joins invoices, the decision journal, and the match proposal — all anchored to a single transaction-time snapshot.</p>
+            <pre class="query-box">SELECT
+  inv._id             AS invoice_id,
+  inv.status,
+  inv.amount,
+  dj._id              AS decision_id,
+  dj.outcome,
+  dj.actor_role,
+  dj.reason_summary,
+  mp.proposal_type,
+  mp.confidence,
+  mp.model_version
+FROM invoice FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' inv
+JOIN decision_journal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' dj
+  ON dj.payment_id = 'P-9001'
+JOIN match_proposal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' mp
+  ON mp._id = dj.proposal_id
+WHERE inv.merchant_id = 'M-100'
+  AND dj.outcome = 'APPROVED'</pre>
+            <div class="table-wrap" id="result-1a"><div class="loading">Loading</div></div>
+        </div>
+
+        <!-- Query 1B -->
+        <div class="card query-section">
+            <h3><span class="query-label">1B</span> Same snapshot with payment details</h3>
+            <p>Adds the payment's payer name, raw remittance text, and channel to show the auditor the full picture.</p>
+            <pre class="query-box">SELECT
+  inv._id             AS invoice_id,
+  inv.status,
+  inv.amount,
+  p.payer_name,
+  p.raw_ref_text,
+  p.channel,
+  dj._id              AS decision_id,
+  dj.outcome,
+  dj.actor_role,
+  mp.proposal_type,
+  mp.confidence,
+  mp.model_version
+FROM decision_journal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' dj
+JOIN payment FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' p
+  ON p._id = dj.payment_id
+JOIN match_proposal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' mp
+  ON mp._id = dj.proposal_id
+JOIN invoice FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' inv
+  ON inv.merchant_id = 'M-100'
+WHERE dj.payment_id = 'P-9001'
+  AND dj.outcome = 'APPROVED'</pre>
+            <div class="table-wrap" id="result-1b"><div class="loading">Loading</div></div>
+        </div>
+
+        <!-- Query 1C -->
+        <div class="card query-section">
+            <h3><span class="query-label">1C</span> Audit chain &mdash; did the decision reach NetSuite?</h3>
+            <p>Closes the audit loop: the approved decision was submitted as a manager entry upload batch to NetSuite.</p>
+            <pre class="query-box">SELECT
+  dj._id              AS decision_id,
+  dj.outcome,
+  dj.actor_role,
+  eb._id              AS batch_id,
+  eb.erp,
+  eb.batch_type,
+  eb.submitted_by,
+  eb.status
+FROM decision_journal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' dj
+JOIN erp_upload_batch FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' eb
+  ON eb.submitted_by = dj.actor_user_id
+WHERE dj.payment_id = 'P-9001'
+  AND dj.outcome = 'APPROVED'</pre>
+            <div class="table-wrap" id="result-1c"><div class="loading">Loading</div></div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODEL EVOLUTION TAB (Query 2)                                       -->
+    <!-- ================================================================== -->
+    <div id="tab-model" class="tab-content">
+        <div class="card">
+            <h2>Model Evolution &mdash; v1.2 vs v1.4</h2>
+            <p>Same payment, same invoices, two different model versions. This directly answers the question: <em>how do you reconstruct decision state when models evolve?</em></p>
+
+            <div class="comparison" style="margin:16px 0">
+                <div class="info-card">
+                    <h4>Model v1.2</h4>
+                    <p><strong>87.4% confidence</strong> &rarr; Composite match <span class="badge badge-approved">Approved</span></p>
+                    <p style="margin-top:4px;font-size:0.9em;color:var(--text-muted)">Approved by AR Analyst per model recommendation. Three invoices summing to $10,000.</p>
+                </div>
+                <div class="info-card red">
+                    <h4>Model v1.4</h4>
+                    <p><strong>51.2% confidence</strong> &rarr; Tolerance match <span class="badge badge-queued">Queued</span></p>
+                    <p style="margin-top:4px;font-size:0.9em;color:var(--text-muted)">Below 0.75 threshold. Dirty remittance, no invoice refs. Escalated to Controller review.</p>
+                </div>
+            </div>
+
+            <div class="callout callout-key">
+                <strong>Key Insight</strong>
+                The February 13 decision is not retroactively invalidated. It was compliant under the model and policy in effect at that moment. Both records exist in the decision journal. An auditor can see exactly what model made the call, what it decided, and what a current model would have decided differently.
+            </div>
+        </div>
+
+        <div class="card query-section">
+            <h3><span class="query-label">2</span> Model version comparison</h3>
+            <p>No temporal qualifier — both model versions exist in the current decision journal.</p>
+            <pre class="query-box">SELECT
+  mp.model_version,
+  mp.confidence,
+  mp.proposal_type,
+  dj.outcome,
+  dj.reason_summary
+FROM match_proposal mp
+JOIN decision_journal dj ON dj.proposal_id = mp._id
+WHERE mp.payment_ids = 'P-9001'
+ORDER BY mp.model_version</pre>
+            <div class="table-wrap" id="result-2"><div class="loading">Loading</div></div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- CREDIT MEMO TAB (Scenario 2: Queries 3A, 3B)                       -->
+    <!-- ================================================================== -->
+    <div id="tab-creditmemo" class="tab-content">
+        <div class="card">
+            <h2>Scenario 2 &mdash; Backdated Credit Memo</h2>
+            <p>A <strong>$200 credit memo</strong> on invoice I-7003. The sales team agreed to the pricing adjustment verbally on <strong>February 24</strong>. The documentation arrived and was entered into the system on <strong>March 3</strong>.</p>
+            <p style="margin-top:8px">An auditor asks: <em>Why did you close that invoice without accounting for the credit memo?</em></p>
+            <p style="margin-top:8px">The correct answer requires two separate queries — one for what the system knew, and one for what was actually true.</p>
+
+            <div class="callout callout-gap">
+                <strong>The Structural Gap</strong>
+                This scenario happens at every enterprise AR shop at month-end. Facts arrive late. The system made a defensible decision based on what it knew — but the business reality was different. This gap is completely unsolvable without bitemporal data modeling.
+            </div>
+        </div>
+
+        <div class="comparison">
+            <!-- Query 3A -->
+            <div class="card query-section">
+                <h3><span class="query-label">3A</span> System Time &mdash; Feb 25</h3>
+                <p>What did the system have <em>recorded</em> by February 25? The credit memo was entered on March 3 — from the system's perspective, it does not exist yet.</p>
+                <pre class="query-box">SELECT
+  _id          AS cm_id,
+  invoice_id,
+  amount,
+  reason,
+  issued_date
+FROM credit_memo
+  FOR SYSTEM_TIME AS OF
+    TIMESTAMP '2026-02-25T16:00:00Z'
+WHERE invoice_id = 'I-7003'</pre>
+                <div class="table-wrap" id="result-3a"><div class="loading">Loading</div></div>
+                <div class="callout callout-insight" style="margin-top:12px">
+                    <strong>Zero rows.</strong> Operationally defensible — the system didn't know about the credit memo when the decision was made.
+                </div>
+            </div>
+
+            <!-- Query 3B -->
+            <div class="card query-section">
+                <h3><span class="query-label">3B</span> Valid Time &mdash; Feb 25</h3>
+                <p>What was <em>true in the business world</em> on February 25? The credit memo was effective February 24 — it existed as a business fact.</p>
+                <pre class="query-box">SELECT
+  _id          AS cm_id,
+  invoice_id,
+  amount,
+  reason,
+  issued_date
+FROM credit_memo
+  FOR VALID_TIME AS OF
+    TIMESTAMP '2026-02-25T16:00:00Z'
+WHERE invoice_id = 'I-7003'</pre>
+                <div class="table-wrap" id="result-3b"><div class="loading">Loading</div></div>
+                <div class="callout callout-key" style="margin-top:12px">
+                    <strong>One row.</strong> The credit memo existed in the business world. XTDB surfaces it via valid-time query while system-time correctly shows the system didn't know.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- EXPORT TAB                                                          -->
+    <!-- ================================================================== -->
+    <div id="tab-export" class="tab-content export-hide">
+        <div class="card" style="text-align:center;padding:48px">
+            <h2>Export Static HTML</h2>
+            <p style="margin:16px 0;color:var(--text-muted)">Download a self-contained HTML file with all query results pre-baked. Opens in any browser, no server needed.</p>
+            <a href="/api/export" style="display:inline-block;padding:14px 32px;background:var(--accent);color:var(--dark);border-radius:8px;font-weight:600;text-decoration:none;font-size:1.05em;box-shadow:0 2px 8px rgba(255,184,0,0.3)">Download Export</a>
+        </div>
+    </div>
+
+</div><!-- /container -->
+
+<script>
+(function() {
+
+    // --- Tab switching ---
+    document.querySelectorAll('.tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+            tab.classList.add('active');
+            var target = document.getElementById('tab-' + tab.dataset.tab);
+            if (target) target.classList.add('active');
+        });
+    });
+
+    // --- Demo script overlay ---
+    window.toggleScript = function() {
+        document.getElementById('script-overlay').classList.toggle('open');
+    };
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 's' || e.key === 'S') { e.preventDefault(); toggleScript(); }
+        if (e.key === 'Escape') document.getElementById('script-overlay').classList.remove('open');
+    });
+
+    // --- SQL syntax highlighting ---
+    var sqlKeywords = /\b(SELECT|FROM|JOIN|WHERE|AND|OR|ON|AS|OF|FOR|ORDER\s+BY|INSERT|INTO|VALUES|UPDATE|SET|TIMESTAMP|SYSTEM_TIME|VALID_TIME|NOT|NULL|IN|BETWEEN|SETTING|DEFAULT)\b/gi;
+
+    document.querySelectorAll('.query-box').forEach(function(el) {
+        var text = el.textContent;
+        text = text.replace(/--(.*)$/gm, '<span class="cmt">--$1</span>');
+        text = text.replace(/'([^']*)'/g, '<span class="str">\'$1\'</span>');
+        text = text.replace(sqlKeywords, '<span class="kw">$&</span>');
+        el.innerHTML = text;
+    });
+
+    // --- Data fetching ---
+    async function fetchQuery(id) {
+        if (typeof PRELOADED_DATA !== 'undefined' && PRELOADED_DATA[id]) {
+            return PRELOADED_DATA[id];
+        }
+        var resp = await fetch('/api/query/' + id);
+        if (!resp.ok) throw new Error('Query ' + id + ' failed: ' + resp.status);
+        return resp.json();
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatCell(col, val) {
+        if (val === '' || val === null || val === undefined) {
+            return '<span style="color:var(--text-muted)">—</span>';
+        }
+
+        // Badges
+        if (col === 'outcome') {
+            var cls = val === 'APPROVED' ? 'badge-approved' : val === 'QUEUED' ? 'badge-queued' : '';
+            if (cls) return '<span class="badge ' + cls + '">' + escapeHtml(val) + '</span>';
+        }
+        if (col === 'status') {
+            var cls2 = val === 'CLOSED' ? 'badge-closed' : val === 'SUBMITTED' ? 'badge-submitted' : '';
+            if (cls2) return '<span class="badge ' + cls2 + '">' + escapeHtml(val) + '</span>';
+        }
+        if (col === 'proposal_type') {
+            var cls3 = val === 'COMPOSITE' ? 'badge-composite' : val === 'TOLERANCE' ? 'badge-tolerance' : '';
+            if (cls3) return '<span class="badge ' + cls3 + '">' + escapeHtml(val) + '</span>';
+        }
+
+        // Amounts
+        if (col === 'amount' || col === 'tolerance_used') {
+            var num = parseFloat(val);
+            if (!isNaN(num)) return '$' + num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // Confidence
+        if (col === 'confidence') {
+            var c = parseFloat(val);
+            if (!isNaN(c)) return (c * 100).toFixed(1) + '%';
+        }
+
+        // Truncate long text
+        var escaped = escapeHtml(val);
+        if (escaped.length > 80) return '<span title="' + escaped + '">' + escaped.substring(0, 77) + '&hellip;</span>';
+        return escaped;
+    }
+
+    function renderTable(container, data) {
+        if (!data || !data.rows || data.rows.length === 0) {
+            container.innerHTML = '<div class="empty-state">No rows returned</div>';
+            return;
+        }
+        var html = '<table><thead><tr>';
+        for (var i = 0; i < data.columns.length; i++) {
+            html += '<th>' + escapeHtml(data.columns[i]) + '</th>';
+        }
+        html += '</tr></thead><tbody>';
+        for (var r = 0; r < data.rows.length; r++) {
+            html += '<tr>';
+            for (var c = 0; c < data.rows[r].length; c++) {
+                html += '<td>' + formatCell(data.columns[c], data.rows[r][c]) + '</td>';
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        html += '<div class="result-count">' + data.rows.length + ' row' + (data.rows.length !== 1 ? 's' : '') + '</div>';
+        container.innerHTML = html;
+    }
+
+    // --- Load all queries ---
+    var queryIds = ['1a', '1b', '1c', '2', '3a', '3b'];
+
+    async function loadAll() {
+        for (var i = 0; i < queryIds.length; i++) {
+            var id = queryIds[i];
+            var container = document.getElementById('result-' + id);
+            if (!container) continue;
+            try {
+                var data = await fetchQuery(id);
+                renderTable(container, data);
+            } catch (err) {
+                container.innerHTML = '<div class="empty-state" style="color:var(--danger)">Error: ' + escapeHtml(err.message) + '</div>';
+            }
+        }
+    }
+
+    // --- Hide export tab in static export ---
+    if (typeof PRELOADED_DATA !== 'undefined') {
+        document.querySelectorAll('.export-hide').forEach(function(el) { el.style.display = 'none'; });
+    }
+
+    // --- Bootstrap ---
+    loadAll();
+
+})();
+</script>
+</body>
+</html>

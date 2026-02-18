@@ -1,0 +1,75 @@
+direction: down
+
+payment: "Payment Arrives\n(dirty remittance)" {
+  shape: queue
+  style.fill: "#fff3e0"
+  style.stroke: "#f7931d"
+}
+
+workbench: Cash App Workbench {
+  style.fill: "#f9f9f9"
+  style.stroke: "#2c2f32"
+  style.stroke-width: 2
+
+  ai: "AI Matching Engine\n(model version + confidence)" {
+    style.fill: "#f3e5f5"
+    style.stroke: "#7b1fa2"
+  }
+
+  analyst: AR Analyst Review {
+    style.fill: "#e3f2fd"
+    style.stroke: "#1565c0"
+  }
+
+  ai -> analyst: proposal
+}
+
+xtdb: "XTDB\nDecision Journal" {
+  shape: cylinder
+  style.fill: "#fffde7"
+  style.stroke: "#ffb800"
+  style.stroke-width: 2
+  style.font-size: 16
+  style.bold: true
+}
+
+netsuite: "NetSuite (ERP)\nApproval + Posting" {
+  style.fill: "#e8f5e9"
+  style.stroke: "#28a745"
+  style.stroke-width: 2
+}
+
+late_facts: "Late-Arriving Facts\n(credit memos, corrections)" {
+  shape: queue
+  style.fill: "#ffebee"
+  style.stroke: "#dc3545"
+}
+
+auditor: Auditor / Controller {
+  shape: person
+  style.fill: "#e3f2fd"
+  style.stroke: "#1565c0"
+}
+
+payment -> workbench.ai
+
+workbench.analyst -> xtdb: "decision + batch\nrecorded" {
+  style.stroke: "#ffb800"
+  style.stroke-width: 2
+}
+
+workbench.analyst -> netsuite: "manager entry\nupload" {
+  style.stroke: "#28a745"
+  style.stroke-width: 2
+}
+
+late_facts -> xtdb: "backdated valid time" {
+  style.stroke: "#dc3545"
+  style.stroke-dash: 3
+}
+
+auditor -> xtdb: "temporal queries\n(system time + valid time)" {
+  style.stroke: "#ffb800"
+  style.stroke-width: 2
+  style.stroke-dash: 3
+}

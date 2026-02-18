@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitemporal Audit Demo — XTDB</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #f8f7f5;
+    --card-bg: #ffffff;
+    --border: #e5e5e5;
+    --text: #1a1a1a;
+    --text-muted: #4a4a4a;
+    --accent: #ffb800;
+    --accent-hover: #f7931d;
+    --success: #28a745;
+    --warning: #f7931d;
+    --danger: #dc3545;
+    --dark: #2c2f32;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 20px;
+}
+
+/* --- Header --- */
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+
+.header-text {
+    text-align: left;
+}
+
+.header h1 {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.header .subtitle {
+    color: var(--text-muted);
+    font-size: 1.05em;
+}
+
+.header-logo img {
+    height: 36px;
+    opacity: 0.85;
+}
+
+/* --- Tabs --- */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.tab {
+    padding: 10px 20px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    background: var(--card-bg);
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.tab:hover {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+}
+
+.tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--dark);
+    box-shadow: 0 2px 8px rgba(255, 184, 0, 0.3);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* --- Cards --- */
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.card h2 { font-size: 1.2em; margin-bottom: 16px; }
+.card h3 { font-size: 1.05em; margin-bottom: 12px; }
+
+/* --- Tables --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+}
+
+th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+
+td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+}
+
+tr:hover td { background: rgba(255, 184, 0, 0.08); }
+
+.table-wrap { overflow-x: auto; }
+
+/* --- Query boxes --- */
+.query-box {
+    background: #1e2127;
+    color: #abb2bf;
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'Fira Mono', 'Consolas', monospace;
+    font-size: 0.82em;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 16px 0;
+    white-space: pre;
+}
+
+.query-box .kw { color: var(--accent); font-weight: 500; }
+.query-box .str { color: #98c379; }
+.query-box .cmt { color: #5c6370; font-style: italic; }
+
+/* --- Badges --- */
+.badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-approved  { background: #e8f5e9; color: #2e7d32; }
+.badge-queued    { background: #fff3e0; color: #e65100; }
+.badge-closed    { background: #e3f2fd; color: #1565c0; }
+.badge-submitted { background: #e8f5e9; color: #2e7d32; }
+.badge-composite { background: #f3e5f5; color: #7b1fa2; }
+.badge-tolerance { background: #fff8e1; color: #f57f17; }
+
+/* --- Callouts --- */
+.callout {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 16px 0;
+    border-left: 4px solid;
+    font-size: 0.92em;
+}
+
+.callout-insight {
+    background: rgba(255, 184, 0, 0.08);
+    border-color: var(--accent);
+}
+
+.callout-key {
+    background: rgba(40, 167, 69, 0.08);
+    border-color: var(--success);
+}
+
+.callout-gap {
+    background: rgba(220, 53, 69, 0.08);
+    border-color: var(--danger);
+}
+
+.callout strong { display: block; margin-bottom: 4px; }
+
+/* --- Info grid --- */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.info-card {
+    padding: 16px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+}
+
+.info-card.green { border-left-color: var(--success); }
+.info-card.red   { border-left-color: var(--danger); }
+
+.info-card h4 {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.info-card p { font-size: 0.95em; }
+
+/* --- Architecture diagram --- */
+.arch-diagram {
+    max-width: 680px;
+    width: 100%;
+    height: auto;
+}
+
+/* --- Inline code --- */
+code {
+    font-family: 'Fira Mono', 'Consolas', monospace;
+    font-size: 0.88em;
+    color: var(--accent-hover);
+    background: rgba(255, 184, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* --- Loading / empty --- */
+.loading {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-muted);
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* --- Comparison layout --- */
+.comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.comparison > div { min-width: 0; }
+
+/* --- Query section --- */
+.query-section { margin-bottom: 32px; }
+
+.query-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.query-label {
+    background: var(--dark);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+    font-family: 'Fira Mono', monospace;
+}
+
+.result-count {
+    font-size: 0.82em;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+/* --- Demo script overlay --- */
+.script-toggle {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 1000;
+    background: var(--dark);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.85em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    transition: background 0.2s;
+}
+
+.script-toggle:hover { background: #3d4148; }
+
+.script-overlay {
+    position: fixed;
+    top: 0; right: -440px;
+    width: 420px;
+    height: 100vh;
+    background: var(--card-bg);
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+    z-index: 999;
+    overflow-y: auto;
+    transition: right 0.3s ease;
+}
+
+.script-overlay.open { right: 0; }
+
+.script-header {
+    position: sticky;
+    top: 0;
+    background: var(--dark);
+    color: white;
+    padding: 16px 20px;
+    font-weight: 600;
+    font-size: 1.05em;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.script-header .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.script-body { padding: 20px; }
+
+.script-step {
+    margin-bottom: 24px;
+    padding-left: 36px;
+    position: relative;
+}
+
+.script-step::before {
+    content: attr(data-step);
+    position: absolute;
+    left: 0; top: 0;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: var(--dark);
+    border-radius: 50%;
+    font-size: 0.75em;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.script-step h4 {
+    font-size: 0.95em;
+    margin-bottom: 6px;
+}
+
+.script-step p {
+    font-size: 0.88em;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.script-action {
+    background: rgba(255, 184, 0, 0.08);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 0.85em;
+    border-radius: 0 4px 4px 0;
+}
+
+.script-quote {
+    background: rgba(247, 147, 29, 0.08);
+    border-left: 3px solid var(--warning);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 0.85em;
+    font-style: italic;
+    border-radius: 0 4px 4px 0;
+}
+
+.script-punchline {
+    background: rgba(40, 167, 69, 0.08);
+    border-left: 3px solid var(--success);
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 0.85em;
+    border-radius: 0 4px 4px 0;
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+    .comparison { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr; }
+    .script-overlay { width: 100vw; right: -100vw; }
+}
+</style>
+</head>
+<body>
+
+<!-- Demo script toggle -->
+<button class="script-toggle" onclick="toggleScript()">Script [S]</button>
+
+<!-- Demo script overlay -->
+<div class="script-overlay" id="script-overlay">
+    <div class="script-header">
+        <span>Demo Script</span>
+        <button class="close-btn" onclick="toggleScript()">&times;</button>
+    </div>
+    <div class="script-body">
+        <div class="script-step" data-step="1">
+            <h4>The Opening Question</h4>
+            <p>This demo is the answer to one question:</p>
+            <div class="script-quote">"How do you reconstruct decision state historically when models evolve?"</div>
+            <p>Every AI-driven cash application decision directly affects invoice status, revenue recognition, and period close. An auditor needs to know: what did the system know, what did it decide, and why?</p>
+        </div>
+
+        <div class="script-step" data-step="2">
+            <h4>Scenario 1: The Decision</h4>
+            <div class="script-action">Navigate to the <strong>Decision State</strong> tab</div>
+            <p>$10,000 payment from Acme Corp. Dirty remittance — no invoice numbers. The AI matching engine proposes a composite match across three invoices. AR Analyst approves. Batch goes to NetSuite.</p>
+            <p>Query 1A reconstructs the <em>complete</em> decision state — invoices, proposal, model version, actor, outcome — from a single temporal snapshot.</p>
+        </div>
+
+        <div class="script-step" data-step="3">
+            <h4>Model Evolution</h4>
+            <div class="script-action">Navigate to the <strong>Model Evolution</strong> tab</div>
+            <p>Same payment. Model v1.2 approved it at 87.4% confidence. Model v1.4, with stricter thresholds, would have queued it at 51.2% for Controller review.</p>
+            <div class="script-punchline">Both records exist in the decision journal. The Feb 13 decision was compliant under the model and policy in effect at that time. That's the point.</div>
+        </div>
+
+        <div class="script-step" data-step="4">
+            <h4>Scenario 2: The Credit Memo</h4>
+            <div class="script-action">Navigate to the <strong>Credit Memo</strong> tab</div>
+            <p>A $200 credit memo: business effective date Feb 24, entered into the system on March 3. The decision was made Feb 25.</p>
+            <p><strong>Transaction time</strong> (Query 3A): zero rows. The system didn't know.<br>
+            <strong>Valid time</strong> (Query 3B): one row. The business fact existed.</p>
+            <div class="script-punchline">This gap happens at every enterprise AR shop at month-end. It is completely unsolvable without bitemporal data modeling. XTDB handles both dimensions natively.</div>
+        </div>
+
+        <div class="script-step" data-step="5">
+            <h4>Key Takeaway</h4>
+            <p>The decision journal and audit layer should be built on XTDB. Not because XTDB is the product — but because a bitemporal data layer solves a structural problem that conventional approaches handle poorly.</p>
+            <p>No custom event sourcing. No log reconstruction. No asking a DBA to write a special report. One query interface, two temporal dimensions, complete audit narrative.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<div class="container">
+    <div class="header">
+        <div class="header-text">
+            <h1>Bitemporal Audit Integrity</h1>
+            <p class="subtitle">XTDB Decision Journal Demo for Cash Application</p>
+        </div>
+        <div class="header-logo">
+            <img src="https://cdn.brandfetch.io/idyloU541m/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1729658573277" alt="Grid Dynamics">
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="decision">Decision State</button>
+        <button class="tab" data-tab="model">Model Evolution</button>
+        <button class="tab" data-tab="creditmemo">Credit Memo</button>
+        <button class="tab export-hide" data-tab="export">Export</button>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- OVERVIEW TAB                                                        -->
+    <!-- ================================================================== -->
+    <div id="tab-overview" class="tab-content active">
+        <div class="card">
+            <h2>What This Demo Shows</h2>
+            <p>This demo answers a single question: <strong>How do you reconstruct decision state historically when models evolve?</strong></p>
+            <p style="margin-top:8px">Every AI-driven cash application decision — matching payments to invoices, approving tolerance matches, applying credit memos — directly affects revenue recognition and is subject to SOX audit. When an auditor or Controller needs to understand why a period closed the way it did, they need two distinct answers:</p>
+
+            <div class="info-grid" style="margin-top:16px">
+                <div class="info-card">
+                    <h4>System Time (Transaction Time)</h4>
+                    <p>What did the system know at the moment it made the decision? Reconstructs the exact database state — invoices, proposals, model versions, actors — as it existed at a specific past timestamp.</p>
+                </div>
+                <div class="info-card green">
+                    <h4>Valid Time (Business Time)</h4>
+                    <p>What was true in the business world at that time, even if the system didn't know it yet? Credit memos, remittance corrections, and pricing adjustments often arrive late.</p>
+                </div>
+            </div>
+
+            <div class="callout callout-insight" style="margin-top:16px">
+                <strong>Why XTDB?</strong>
+                No conventional database handles both of these as first-class queryable capabilities. XTDB handles both natively — no custom event sourcing, no log reconstruction, no application-level temporal modeling.
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Demo Scenarios</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>Scenario 1: Decision State</h4>
+                    <p>$10,000 composite payment with dirty remittance. AI proposes a match, AR Analyst approves. An auditor asks: <em>what did you know, what did you decide, and why?</em></p>
+                </div>
+                <div class="info-card">
+                    <h4>Scenario 1+: Model Evolution</h4>
+                    <p>Same payment evaluated by model v1.2 (approved) and v1.4 (queued). The decision was compliant under the model in effect at that time.</p>
+                </div>
+                <div class="info-card red">
+                    <h4>Scenario 2: Backdated Credit Memo</h4>
+                    <p>$200 credit memo effective Feb 24, entered into the system Mar 3. The system made a defensible decision based on what it knew — but the business reality was different.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Architecture</h2>
+            <p>The platform produces <strong>manager entry uploads</strong> — structured batches that NetSuite ingests through its own approval and posting workflows. The control point stays inside NetSuite. XTDB serves as the <strong>decision journal</strong>: the bitemporal audit layer underneath the matching engine.</p>
+            <div style="margin-top:16px;text-align:center">
+                <img src="/architecture.svg" alt="Architecture" class="arch-diagram">
+            </div>
+            <div class="info-grid" style="margin-top:16px">
+                <div class="info-card">
+                    <h4>Cash App Workbench</h4>
+                    <p>Matching engine proposes: exact, tolerance, composite, and multi-entity matches with confidence scores.</p>
+                </div>
+                <div class="info-card green">
+                    <h4>Decision Journal (XTDB)</h4>
+                    <p>Every proposal, approval, modification, rejection, and escalation — with full bitemporal history. ERP batch status also recorded.</p>
+                </div>
+                <div class="info-card">
+                    <h4>NetSuite (ERP)</h4>
+                    <p>Receives manager entry uploads. Applies its own approval workflows. Remains the posting and approval system of record.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- DECISION STATE TAB (Scenario 1: Queries 1A, 1B, 1C)                -->
+    <!-- ================================================================== -->
+    <div id="tab-decision" class="tab-content">
+        <div class="card">
+            <h2>Scenario 1 &mdash; Reconstruct Decision State</h2>
+            <p>On <strong>February 13 at 4:30 PM EST</strong>, a $10,000 payment arrives from Acme Corp with a dirty remittance: <code>PAYMENT REF ACME FEB INVOICES CONSOLIDATED PMT</code>. No invoice numbers. The AI matching engine (model v1.2) proposes a composite match across three open invoices summing to $10,000. An AR Analyst approves. The batch goes to NetSuite.</p>
+            <p style="margin-top:8px">In April, an auditor asks: <em>What did you know on February 13? What did you decide? Why? What changed afterward?</em></p>
+            <div class="callout callout-key">
+                <strong>Key Point</strong>
+                Every query below uses <code>FOR SYSTEM_TIME AS OF</code> anchored to the same timestamp. The result is a complete reconstruction of the decision state as the system understood it at that exact moment.
+            </div>
+        </div>
+
+        <!-- Query 1A -->
+        <div class="card query-section">
+            <h3><span class="query-label">1A</span> Decision state at Feb 13 4:30 PM</h3>
+            <p>Joins invoices, the decision journal, and the match proposal — all anchored to a single transaction-time snapshot.</p>
+            <pre class="query-box">SELECT
+  inv._id             AS invoice_id,
+  inv.status,
+  inv.amount,
+  dj._id              AS decision_id,
+  dj.outcome,
+  dj.actor_role,
+  dj.reason_summary,
+  mp.proposal_type,
+  mp.confidence,
+  mp.model_version
+FROM invoice FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' inv
+JOIN decision_journal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' dj
+  ON dj.payment_id = 'P-9001'
+JOIN match_proposal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' mp
+  ON mp._id = dj.proposal_id
+WHERE inv.merchant_id = 'M-100'
+  AND dj.outcome = 'APPROVED'</pre>
+            <div class="table-wrap" id="result-1a"><div class="loading">Loading</div></div>
+        </div>
+
+        <!-- Query 1B -->
+        <div class="card query-section">
+            <h3><span class="query-label">1B</span> Same snapshot with payment details</h3>
+            <p>Adds the payment's payer name, raw remittance text, and channel to show the auditor the full picture.</p>
+            <pre class="query-box">SELECT
+  inv._id             AS invoice_id,
+  inv.status,
+  inv.amount,
+  p.payer_name,
+  p.raw_ref_text,
+  p.channel,
+  dj._id              AS decision_id,
+  dj.outcome,
+  dj.actor_role,
+  mp.proposal_type,
+  mp.confidence,
+  mp.model_version
+FROM decision_journal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' dj
+JOIN payment FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' p
+  ON p._id = dj.payment_id
+JOIN match_proposal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' mp
+  ON mp._id = dj.proposal_id
+JOIN invoice FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' inv
+  ON inv.merchant_id = 'M-100'
+WHERE dj.payment_id = 'P-9001'
+  AND dj.outcome = 'APPROVED'</pre>
+            <div class="table-wrap" id="result-1b"><div class="loading">Loading</div></div>
+        </div>
+
+        <!-- Query 1C -->
+        <div class="card query-section">
+            <h3><span class="query-label">1C</span> Audit chain &mdash; did the decision reach NetSuite?</h3>
+            <p>Closes the audit loop: the approved decision was submitted as a manager entry upload batch to NetSuite.</p>
+            <pre class="query-box">SELECT
+  dj._id              AS decision_id,
+  dj.outcome,
+  dj.actor_role,
+  eb._id              AS batch_id,
+  eb.erp,
+  eb.batch_type,
+  eb.submitted_by,
+  eb.status
+FROM decision_journal FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' dj
+JOIN erp_upload_batch FOR SYSTEM_TIME AS OF TIMESTAMP '2026-02-13T21:30:00Z' eb
+  ON eb.submitted_by = dj.actor_user_id
+WHERE dj.payment_id = 'P-9001'
+  AND dj.outcome = 'APPROVED'</pre>
+            <div class="table-wrap" id="result-1c"><div class="loading">Loading</div></div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODEL EVOLUTION TAB (Query 2)                                       -->
+    <!-- ================================================================== -->
+    <div id="tab-model" class="tab-content">
+        <div class="card">
+            <h2>Model Evolution &mdash; v1.2 vs v1.4</h2>
+            <p>Same payment, same invoices, two different model versions. This directly answers the question: <em>how do you reconstruct decision state when models evolve?</em></p>
+
+            <div class="comparison" style="margin:16px 0">
+                <div class="info-card">
+                    <h4>Model v1.2</h4>
+                    <p><strong>87.4% confidence</strong> &rarr; Composite match <span class="badge badge-approved">Approved</span></p>
+                    <p style="margin-top:4px;font-size:0.9em;color:var(--text-muted)">Approved by AR Analyst per model recommendation. Three invoices summing to $10,000.</p>
+                </div>
+                <div class="info-card red">
+                    <h4>Model v1.4</h4>
+                    <p><strong>51.2% confidence</strong> &rarr; Tolerance match <span class="badge badge-queued">Queued</span></p>
+                    <p style="margin-top:4px;font-size:0.9em;color:var(--text-muted)">Below 0.75 threshold. Dirty remittance, no invoice refs. Escalated to Controller review.</p>
+                </div>
+            </div>
+
+            <div class="callout callout-key">
+                <strong>Key Insight</strong>
+                The February 13 decision is not retroactively invalidated. It was compliant under the model and policy in effect at that moment. Both records exist in the decision journal. An auditor can see exactly what model made the call, what it decided, and what a current model would have decided differently.
+            </div>
+        </div>
+
+        <div class="card query-section">
+            <h3><span class="query-label">2</span> Model version comparison</h3>
+            <p>No temporal qualifier — both model versions exist in the current decision journal.</p>
+            <pre class="query-box">SELECT
+  mp.model_version,
+  mp.confidence,
+  mp.proposal_type,
+  dj.outcome,
+  dj.reason_summary
+FROM match_proposal mp
+JOIN decision_journal dj ON dj.proposal_id = mp._id
+WHERE mp.payment_ids = 'P-9001'
+ORDER BY mp.model_version</pre>
+            <div class="table-wrap" id="result-2"><div class="loading">Loading</div></div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- CREDIT MEMO TAB (Scenario 2: Queries 3A, 3B)                       -->
+    <!-- ================================================================== -->
+    <div id="tab-creditmemo" class="tab-content">
+        <div class="card">
+            <h2>Scenario 2 &mdash; Backdated Credit Memo</h2>
+            <p>A <strong>$200 credit memo</strong> on invoice I-7003. The sales team agreed to the pricing adjustment verbally on <strong>February 24</strong>. The documentation arrived and was entered into the system on <strong>March 3</strong>.</p>
+            <p style="margin-top:8px">An auditor asks: <em>Why did you close that invoice without accounting for the credit memo?</em></p>
+            <p style="margin-top:8px">The correct answer requires two separate queries — one for what the system knew, and one for what was actually true.</p>
+
+            <div class="callout callout-gap">
+                <strong>The Structural Gap</strong>
+                This scenario happens at every enterprise AR shop at month-end. Facts arrive late. The system made a defensible decision based on what it knew — but the business reality was different. This gap is completely unsolvable without bitemporal data modeling.
+            </div>
+        </div>
+
+        <div class="comparison">
+            <!-- Query 3A -->
+            <div class="card query-section">
+                <h3><span class="query-label">3A</span> System Time &mdash; Feb 25</h3>
+                <p>What did the system have <em>recorded</em> by February 25? The credit memo was entered on March 3 — from the system's perspective, it does not exist yet.</p>
+                <pre class="query-box">SELECT
+  _id          AS cm_id,
+  invoice_id,
+  amount,
+  reason,
+  issued_date
+FROM credit_memo
+  FOR SYSTEM_TIME AS OF
+    TIMESTAMP '2026-02-25T16:00:00Z'
+WHERE invoice_id = 'I-7003'</pre>
+                <div class="table-wrap" id="result-3a"><div class="loading">Loading</div></div>
+                <div class="callout callout-insight" style="margin-top:12px">
+                    <strong>Zero rows.</strong> Operationally defensible — the system didn't know about the credit memo when the decision was made.
+                </div>
+            </div>
+
+            <!-- Query 3B -->
+            <div class="card query-section">
+                <h3><span class="query-label">3B</span> Valid Time &mdash; Feb 25</h3>
+                <p>What was <em>true in the business world</em> on February 25? The credit memo was effective February 24 — it existed as a business fact.</p>
+                <pre class="query-box">SELECT
+  _id          AS cm_id,
+  invoice_id,
+  amount,
+  reason,
+  issued_date
+FROM credit_memo
+  FOR VALID_TIME AS OF
+    TIMESTAMP '2026-02-25T16:00:00Z'
+WHERE invoice_id = 'I-7003'</pre>
+                <div class="table-wrap" id="result-3b"><div class="loading">Loading</div></div>
+                <div class="callout callout-key" style="margin-top:12px">
+                    <strong>One row.</strong> The credit memo existed in the business world. XTDB surfaces it via valid-time query while system-time correctly shows the system didn't know.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- EXPORT TAB                                                          -->
+    <!-- ================================================================== -->
+    <div id="tab-export" class="tab-content export-hide">
+        <div class="card" style="text-align:center;padding:48px">
+            <h2>Export Static HTML</h2>
+            <p style="margin:16px 0;color:var(--text-muted)">Download a self-contained HTML file with all query results pre-baked. Opens in any browser, no server needed.</p>
+            <a href="/api/export" style="display:inline-block;padding:14px 32px;background:var(--accent);color:var(--dark);border-radius:8px;font-weight:600;text-decoration:none;font-size:1.05em;box-shadow:0 2px 8px rgba(255,184,0,0.3)">Download Export</a>
+        </div>
+    </div>
+
+</div><!-- /container -->
+
+<script>
+(function() {
+
+    // --- Tab switching ---
+    document.querySelectorAll('.tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+            tab.classList.add('active');
+            var target = document.getElementById('tab-' + tab.dataset.tab);
+            if (target) target.classList.add('active');
+        });
+    });
+
+    // --- Demo script overlay ---
+    window.toggleScript = function() {
+        document.getElementById('script-overlay').classList.toggle('open');
+    };
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 's' || e.key === 'S') { e.preventDefault(); toggleScript(); }
+        if (e.key === 'Escape') document.getElementById('script-overlay').classList.remove('open');
+    });
+
+    // --- SQL syntax highlighting ---
+    var sqlKeywords = /\b(SELECT|FROM|JOIN|WHERE|AND|OR|ON|AS|OF|FOR|ORDER\s+BY|INSERT|INTO|VALUES|UPDATE|SET|TIMESTAMP|SYSTEM_TIME|VALID_TIME|NOT|NULL|IN|BETWEEN|SETTING|DEFAULT)\b/gi;
+
+    document.querySelectorAll('.query-box').forEach(function(el) {
+        var text = el.textContent;
+        text = text.replace(/--(.*)$/gm, '<span class="cmt">--$1</span>');
+        text = text.replace(/'([^']*)'/g, '<span class="str">\'$1\'</span>');
+        text = text.replace(sqlKeywords, '<span class="kw">$&</span>');
+        el.innerHTML = text;
+    });
+
+    // --- Data fetching ---
+    async function fetchQuery(id) {
+        if (typeof PRELOADED_DATA !== 'undefined' && PRELOADED_DATA[id]) {
+            return PRELOADED_DATA[id];
+        }
+        var resp = await fetch('/api/query/' + id);
+        if (!resp.ok) throw new Error('Query ' + id + ' failed: ' + resp.status);
+        return resp.json();
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatCell(col, val) {
+        if (val === '' || val === null || val === undefined) {
+            return '<span style="color:var(--text-muted)">—</span>';
+        }
+
+        // Badges
+        if (col === 'outcome') {
+            var cls = val === 'APPROVED' ? 'badge-approved' : val === 'QUEUED' ? 'badge-queued' : '';
+            if (cls) return '<span class="badge ' + cls + '">' + escapeHtml(val) + '</span>';
+        }
+        if (col === 'status') {
+            var cls2 = val === 'CLOSED' ? 'badge-closed' : val === 'SUBMITTED' ? 'badge-submitted' : '';
+            if (cls2) return '<span class="badge ' + cls2 + '">' + escapeHtml(val) + '</span>';
+        }
+        if (col === 'proposal_type') {
+            var cls3 = val === 'COMPOSITE' ? 'badge-composite' : val === 'TOLERANCE' ? 'badge-tolerance' : '';
+            if (cls3) return '<span class="badge ' + cls3 + '">' + escapeHtml(val) + '</span>';
+        }
+
+        // Amounts
+        if (col === 'amount' || col === 'tolerance_used') {
+            var num = parseFloat(val);
+            if (!isNaN(num)) return '$' + num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // Confidence
+        if (col === 'confidence') {
+            var c = parseFloat(val);
+            if (!isNaN(c)) return (c * 100).toFixed(1) + '%';
+        }
+
+        // Truncate long text
+        var escaped = escapeHtml(val);
+        if (escaped.length > 80) return '<span title="' + escaped + '">' + escaped.substring(0, 77) + '&hellip;</span>';
+        return escaped;
+    }
+
+    function renderTable(container, data) {
+        if (!data || !data.rows || data.rows.length === 0) {
+            container.innerHTML = '<div class="empty-state">No rows returned</div>';
+            return;
+        }
+        var html = '<table><thead><tr>';
+        for (var i = 0; i < data.columns.length; i++) {
+            html += '<th>' + escapeHtml(data.columns[i]) + '</th>';
+        }
+        html += '</tr></thead><tbody>';
+        for (var r = 0; r < data.rows.length; r++) {
+            html += '<tr>';
+            for (var c = 0; c < data.rows[r].length; c++) {
+                html += '<td>' + formatCell(data.columns[c], data.rows[r][c]) + '</td>';
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        html += '<div class="result-count">' + data.rows.length + ' row' + (data.rows.length !== 1 ? 's' : '') + '</div>';
+        container.innerHTML = html;
+    }
+
+    // --- Load all queries ---
+    var queryIds = ['1a', '1b', '1c', '2', '3a', '3b'];
+
+    async function loadAll() {
+        for (var i = 0; i < queryIds.length; i++) {
+            var id = queryIds[i];
+            var container = document.getElementById('result-' + id);
+            if (!container) continue;
+            try {
+                var data = await fetchQuery(id);
+                renderTable(container, data);
+            } catch (err) {
+                container.innerHTML = '<div class="empty-state" style="color:var(--danger)">Error: ' + escapeHtml(err.message) + '</div>';
+            }
+        }
+    }
+
+    // --- Hide export tab in static export ---
+    if (typeof PRELOADED_DATA !== 'undefined') {
+        document.querySelectorAll('.export-hide').forEach(function(el) { el.style.display = 'none'; });
+    }
+
+    // --- Bootstrap ---
+    loadAll();
+
+})();
+</script>
+</body>
+</html>

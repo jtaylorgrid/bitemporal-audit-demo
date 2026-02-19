@@ -90,7 +90,7 @@ func startServer(ctx context.Context, conn *pgx.Conn, addr string) error {
 		html = strings.Replace(html, "<title>", "<title>Exported — ", 1)
 		html = strings.Replace(html,
 			`<img src="/architecture.svg" alt="Architecture" class="arch-diagram">`,
-			string(architectureSVG), 1)
+			`<div class="arch-diagram">`+string(architectureSVG)+`</div>`, 1)
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Content-Disposition", "attachment; filename=bitemporal-audit-demo.html")
